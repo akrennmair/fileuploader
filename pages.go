@@ -51,16 +51,17 @@ function get(uri, f) {
 		};
 		xmlHttp.send(null);
 	} else {
-		alert("error: failed to create xmlHttp object");
+		console.log("error: failed to create xmlHttp object");
 	}
 }
 
 var upload_started = false;
 var percent = 0;
+var save_pending = false;
 
-function start() {
+function start_upload() {
 	if (!upload_started) {
-		document.forms["upload"].submit();
+		document.forms["frm_upload"].submit();
 		start_progress();
 		upload_started = true;
 	} else {
@@ -84,28 +85,43 @@ function start_progress() {
 }
 
 function update_progress(percent) {
-	var div = document.getElementById("progress");
-	div.innerHTML = "Uploading... " + percent + "%";
+	document.getElementById("progress").innerHTML = "Uploading... " + percent + "%";
 }
 
 function finish_progress() {
-	var div = document.getElementById("progress");
-	div.innerHTML = 'Upload finished. <a href="/files/{upload_id}">Uploaded to here.</a>';
-	var savebtn = document.getElementById("savebtn");
-	savebtn.disabled = false;
+	document.getElementById("progress").innerHTML = 'Upload finished. <a href="/files/{upload_id}">Uploaded to here.</a>';
+	if (save_pending) {
+		document.forms["frm_save"].submit();
+	}
+}
+
+function save_desc() {
+	if (upload_started) {
+		document.getElementById("btn_save").disabled = true;
+		document.getElementById("input_desc").disabled = true;
+		if (percent == 100) {
+			document.forms["frm_save"].submit();
+		} else {
+			save_pending = true;
+			document.getElementById("div_savemsg").innerHTML = "Uploading file and saving description...";
+		}
+	} else {
+		document.getElementById("div_savemsg").innerHTML = "Please choose a file to be uploaded.";
+	}
 }
 </script>
 </head>
 <body>
 <h1>SuperUpload</h1>
-<form action="/upload/{upload_id}" method="post" id="upload" name="upload" target="uploadiframe" enctype="multipart/form-data">
-<input type="file" name="file" id="file" onchange="start();">
+<form action="/upload/{upload_id}" method="post" id="frm_upload" target="uploadiframe" enctype="multipart/form-data">
+<input type="file" name="file" onchange="start_upload();">
 </form>
 <div id="progress">Please select file to upload</div>
-<form action="/savetext/{upload_id}" method="post">
-<textarea rows="4" cols="80" id="text" name="text"></textarea><br>
-<input type="submit" value="Save" id="savebtn" disabled>
+<form action="/savetext/{upload_id}" method="post" id="frm_save">
+<textarea rows="4" cols="80" id="input_desc"></textarea><br>
+<input type="submit" value="Save" onclick="save_desc(); return false;" id="btn_save">
 </form>
+<div id="div_savemsg"></div>
 <iframe name="uploadiframe" style="display: none"></iframe>
 </body>
 </html>
