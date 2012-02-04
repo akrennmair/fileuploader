@@ -9,7 +9,7 @@ import (
 	"strings"
 )
 
-var sharedSecret = "jf7$SD!&/kI9IBjk<Lz8FV"
+var secretKey = "jf7$SD!&/kI9IBjk<Lz8FV"
 
 func GenerateUploadID() (string, error) {
 	rnd := make([]byte, 8)
@@ -18,7 +18,7 @@ func GenerateUploadID() (string, error) {
 	}
 
 	hash := md5.New()
-	hash.Write([]byte(sharedSecret))
+	hash.Write([]byte(secretKey))
 	hash.Write(rnd)
 
 	result := append(hash.Sum(nil), rnd...)
@@ -44,7 +44,7 @@ func VerifyUploadID(id string) bool {
 	rnd := upid[16:]
 
 	hash := md5.New()
-	hash.Write([]byte(sharedSecret))
+	hash.Write([]byte(secretKey))
 	hash.Write(rnd)
 
 	return bytes.Equal(hash.Sum(nil), md5check)
