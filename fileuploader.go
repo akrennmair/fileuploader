@@ -2,11 +2,11 @@ package main
 
 import (
 	"fmt"
-	"net/http"
-	"strconv"
 	"io"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 )
 
 func main() {
@@ -26,8 +26,8 @@ func main() {
 }
 
 type StartPageHandler struct {
-	StartPage	http.HandlerFunc
-	Other		http.Handler
+	StartPage http.HandlerFunc
+	Other     http.Handler
 }
 
 func (h *StartPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
@@ -222,7 +222,7 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 			rw.Header()["Content-Disposition"] = []string{"attachment; filename=" + filename}
 		}
 		if size, err := GetUploadSize(upload_id); err == nil {
-			rw.Header()["Content-Length"] = []string{strconv.FormatInt(size,10)}
+			rw.Header()["Content-Length"] = []string{strconv.FormatInt(size, 10)}
 		}
 		rw.Header()["Content-Type"] = []string{"application/octet-stream"}
 		rw.WriteHeader(http.StatusOK)

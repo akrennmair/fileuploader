@@ -1,8 +1,8 @@
 package main
 
 import (
-	"log"
 	"io"
+	"log"
 )
 
 type ProgressReadCloser struct {
@@ -35,4 +35,3 @@ func (prc *ProgressReadCloser) Read(p []byte) (n int, err error) {
 func (prc *ProgressReadCloser) Close() error {
 	return prc.r.Close()
 }
-

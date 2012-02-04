@@ -1,8 +1,8 @@
 package main
 
 import (
-	"strings"
 	"html"
+	"strings"
 )
 
 var error_tmpl = `<!DOCTYPE html>
@@ -15,7 +15,6 @@ var error_tmpl = `<!DOCTYPE html>
 </body>
 </html>
 `
-
 
 func ErrorPage(errmsg string) []byte {
 	return []byte(strings.Replace(error_tmpl, "{errormsg}", errmsg, -1))

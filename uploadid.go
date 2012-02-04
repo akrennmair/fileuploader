@@ -4,9 +4,9 @@ import (
 	"bytes"
 	"crypto/md5"
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"strings"
-	"errors"
 )
 
 var sharedSecret = "jf7$SD!&/kI9IBjk<Lz8FV"
