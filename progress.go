@@ -18,8 +18,15 @@ func NewProgressReadCloser(r io.ReadCloser, content_length uint64, upload_id str
 }
 
 func (prc *ProgressReadCloser) Read(p []byte) (n int, err error) {
+	// first, call the Read() method on our wrapped io.ReadCloser
 	n, err = prc.r.Read(p)
 	if err == nil {
+		// if the read operation went fine, we add the number of received bytes to the count
+		// of what we received so far. Then we compute how many percent of the uploaded have
+		// already been completed, and if it's bigger than the previous value, we persist this
+		// new upload progress value. The check whether the new percentage is bigger than the
+		// older one is to limit the I/O load that is otherwise created by consistently updating
+		// the pgoress.
 		prc.received += uint64(n)
 		percent := int((100 * prc.received) / prc.content_length)
 		if prc.prev_percent < 0 || percent > prc.prev_percent {
