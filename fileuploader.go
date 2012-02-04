@@ -46,13 +46,19 @@ func uploadDialog(rw http.ResponseWriter, r *http.Request) {
 
 // returns the progress for the current upload
 func progress(rw http.ResponseWriter, r *http.Request) {
-	rw.WriteHeader(http.StatusOK)
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
+		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
-	rw.Write([]byte("progress: upload_id = " + upload_id))
+	percent, err := ReadProgress(upload_id)
+	if err != nil {
+		percent = -1
+	}
+	rw.Header()["Content-Type"] = []string{"text/plain"}
+	rw.WriteHeader(http.StatusOK)
+	rw.Write([]byte(fmt.Sprintf("%d", percent)))
 }
 
 // accepts the POST with the uploaded file

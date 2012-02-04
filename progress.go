@@ -24,12 +24,12 @@ func (prc *ProgressReadCloser) Read(p []byte) (n int, err error) {
 		prc.received += uint64(n)
 		percent := int((100 * prc.received) / prc.content_length)
 		if prc.prev_percent < 0 || percent > prc.prev_percent {
+			fmt.Printf("upload progress for %s: %d (%d of %d)\n", prc.upload_id, percent, prc.received, prc.content_length)
 			if err = WriteProgress(prc.upload_id, percent); err != nil {
 				fmt.Printf("error writing progress: %s\n", err.Error())
 			}
 		}
 		prc.prev_percent = percent
-		fmt.Printf("upload progress for %s: %d (%d of %d)\n", prc.upload_id, percent, prc.received, prc.content_length)
 	}
 	return
 }
