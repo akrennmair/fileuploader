@@ -1,16 +1,17 @@
 package main
 
 import (
-	"crypto/rand"
-	"crypto/md5"
 	"bytes"
-	"os"
+	"crypto/md5"
+	"crypto/rand"
 	"fmt"
+	"strings"
+	"errors"
 )
 
 var sharedSecret = "jf7$SD!&/kI9IBjk<Lz8FV"
 
-func generateUploadID() (string, os.Error) {
+func GenerateUploadID() (string, error) {
 	rnd := make([]byte, 8)
 	if n, err := rand.Read(rnd); err != nil || n != len(rnd) {
 		return "", err
@@ -20,14 +21,14 @@ func generateUploadID() (string, os.Error) {
 	hash.Write([]byte(sharedSecret))
 	hash.Write(rnd)
 
-	result := append(hash.Sum(), rnd...)
+	result := append(hash.Sum(nil), rnd...)
 
 	return fmt.Sprintf("%x", result), nil
 }
 
-func verifyUploadID(id string) bool {
+func VerifyUploadID(id string) bool {
 	upid := []byte{}
-	for i:=0;(i+1)<len(id);i+=2 {
+	for i := 0; (i + 1) < len(id); i += 2 {
 		var b byte
 		if n, err := fmt.Sscanf(string(id[i:i+2]), "%x", &b); err != nil || n != 1 {
 			return false
@@ -46,5 +47,18 @@ func verifyUploadID(id string) bool {
 	hash.Write([]byte(sharedSecret))
 	hash.Write(rnd)
 
-	return bytes.Equal(hash.Sum(), md5check)
+	return bytes.Equal(hash.Sum(nil), md5check)
+}
+
+func GetUploadID(uri string) (upload_id string, err error) {
+	slash_pos := strings.LastIndex(uri, "/")
+	if slash_pos < 0 {
+		err = errors.New("no Upload ID")
+		return
+	}
+	upload_id = uri[slash_pos+1:]
+	if !VerifyUploadID(upload_id) {
+		err = errors.New("invalid Upload ID")
+	}
+	return
 }

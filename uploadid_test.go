@@ -7,7 +7,7 @@ import (
 func TestUploadID(t *testing.T) {
 	id, err := generateUploadID()
 	if err != nil {
-		t.Fatalf("generateUploadID doesn't generate a valid ID: %s", err.String())
+		t.Fatalf("generateUploadID doesn't generate a valid ID: %s", err.Error())
 	}
 	if len(id) != 48 {
 		t.Errorf("ID %s is not 48 characters long", id)

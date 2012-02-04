@@ -1,10 +1,10 @@
 package main
 
 import (
-	"http"
 	"fmt"
-	"strings"
 	"io"
+	"net/http"
+	"strconv"
 	"os"
 )
 
@@ -28,7 +28,7 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseW
 		if len(ua) == 0 {
 			ua = []string{"-"}
 		}
-		fmt.Printf("%s %s %s %s\n", r.RemoteAddr, r.Method, r.RawURL, ua[0])
+		fmt.Printf("%s %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path, ua[0])
 		f(rw, r)
 	}
 }
@@ -37,8 +37,8 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseW
 func uploadDialog(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 
-	if upid, err := generateUploadID(); err != nil {
-		rw.Write(ErrorPage(err.String()))
+	if upid, err := GenerateUploadID(); err != nil {
+		rw.Write(ErrorPage(err.Error()))
 	} else {
 		rw.Write(UploadPage(upid))
 	}
@@ -47,14 +47,9 @@ func uploadDialog(rw http.ResponseWriter, r *http.Request) {
 // returns the progress for the current upload
 func progress(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
-	slash_pos := strings.LastIndex(r.RawURL, "/")
-	if slash_pos < 0 {
-		rw.Write(ErrorPage("no Upload ID"))
-		return
-	}
-	upload_id := r.RawURL[slash_pos+1:]
-	if !verifyUploadID(upload_id) {
-		rw.Write(ErrorPage("invalid Upload ID"))
+	upload_id, err := GetUploadID(r.URL.Path)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
 		return
 	}
 	rw.Write([]byte("progress: upload_id = " + upload_id))
@@ -67,20 +62,42 @@ func postUpload(rw http.ResponseWriter, r *http.Request) {
 		rw.Write(ErrorPage("POST expected"))
 		return
 	}
-	slash_pos := strings.LastIndex(r.RawURL, "/")
-	if slash_pos < 0 {
-		rw.WriteHeader(http.StatusOK)
-		rw.Write(ErrorPage("no Upload ID"))
+	upload_id, err := GetUploadID(r.URL.Path)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
 		return
 	}
-	upload_id := r.RawURL[slash_pos+1:]
-	if !verifyUploadID(upload_id) {
-		rw.WriteHeader(http.StatusOK)
-		rw.Write(ErrorPage("invalid Upload ID"))
-		return
-	}
-	io.Copy(os.Stdout, r.Body)
 
+	content_length, _ := strconv.ParseUint(r.Header["Content-Length"][0], 10, 64) // TODO: check error
+
+	r.Body = NewProgressReadCloser(r.Body, content_length, upload_id)
+
+	fmt.Printf("before creating MultipartReader\n")
+
+	mpr, err := r.MultipartReader() // TODO: check error
+	if err != nil {
+		rw.WriteHeader(http.StatusOK)
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	for {
+		fmt.Printf("handling next part\n")
+		if part, err := mpr.NextPart(); err == io.EOF {
+			break
+		} else {
+			if f, err := os.OpenFile("files/" + upload_id, os.O_CREATE | os.O_WRONLY, 0444); err == nil {
+				io.Copy(f, part)
+				f.Close()
+			} else {
+				rw.WriteHeader(http.StatusOK)
+				rw.Write([]byte("Opening file for " + upload_id + " failed"))
+				return
+			}
+		}
+	}
+
+	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("postUpload: upload_id = " + upload_id))
 }
 
@@ -88,10 +105,26 @@ func postUpload(rw http.ResponseWriter, r *http.Request) {
 func show(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("show: "))
-	rw.Write([]byte(r.RawURL))
+	rw.Write([]byte(r.URL.Path))
 }
 
 // deliver file from file system by Upload ID
 func deliverFile(rw http.ResponseWriter, r *http.Request) {
-	// TODO: implement
+	upload_id, err := GetUploadID(r.URL.Path)
+	if err != nil {
+		rw.WriteHeader(http.StatusNotFound)
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	if f, err := os.Open("files/" + upload_id); err != nil {
+		rw.WriteHeader(http.StatusNotFound)
+		rw.Write(ErrorPage(err.Error()))
+		return
+	} else {
+		rw.Header()["Content-Type"] = []string{"application/octet-stream"}
+		rw.WriteHeader(http.StatusOK)
+		io.Copy(rw, f)
+		f.Close()
+	}
 }

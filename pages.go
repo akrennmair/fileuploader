@@ -25,19 +25,26 @@ var upload_tmpl = `<!DOCTYPE html>
 <head>
 <meta charset="utf-8">
 <script type="text/javascript">
-var upload_id = "{upload_id}";
-
-// TODO
+window.uploader = window.uploader || {};
+window.uploader = {
+	id: "{upload_id}",
+	start: function() {
+		document.forms["upload"].submit();
+	}
+};
 </script>
 </head>
 <body>
-<h1>File Upload</h1>
-<form action="/upload/{upload_id}" method="post" target="upload" enctype="multipart/form-data">
-<input type="file">
-<input type="button" value="Upload File">
+<h1>SuperUpload</h1>
+<form action="/upload/{upload_id}" method="post" id="upload" name="upload" target="uploadiframe" enctype="multipart/form-data">
+<input type="file" name="file" id="file" onchange="window.uploader.start();">
 </form>
 <div id="progress"></div>
-<iframe name="upload" style="display: none"></iframe>
+<form action="/savetext/{upload_id}" method="post">
+<textarea rows="4" cols="80" id="text"></textarea><br>
+<input type="submit" value="Save">
+</form>
+<iframe name="uploadiframe" style="display: none"></iframe>
 </body>
 </html>
 `
