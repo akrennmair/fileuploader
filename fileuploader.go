@@ -26,7 +26,7 @@ func main() {
 }
 
 // generate wrapper functions for request logging
-func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseWriter, *http.Request) {
+func logReq(f http.HandlerFunc) http.HandlerFunc {
 	return func(rw http.ResponseWriter, r *http.Request) {
 		ua := r.Header["User-Agent"]
 		if len(ua) == 0 {
@@ -128,6 +128,11 @@ func SaveDesc(rw http.ResponseWriter, r *http.Request) {
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
 		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+	if !UploadExists(upload_id) {
+		rw.WriteHeader(http.StatusForbidden)
+		rw.Write([]byte("Forbidden"))
 		return
 	}
 

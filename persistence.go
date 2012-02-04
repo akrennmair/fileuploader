@@ -33,6 +33,11 @@ func OpenUploadWritable(upload_id string) (io.WriteCloser, error) {
 	return os.OpenFile("files/" + upload_id, os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644)
 }
 
+func UploadExists(upload_id string) bool {
+	_, err := os.Stat("files/" + upload_id)
+	return err == nil
+}
+
 func SaveUploadText(upload_id, text string) error {
 	if f, err := os.OpenFile("files/" + upload_id + ".desc", os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644); err != nil {
 		return err
