@@ -5,9 +5,13 @@ import (
 	"net/http"
 	"strconv"
 	"io"
+	"log"
+	"os"
 )
 
 func main() {
+	log.SetOutput(os.Stdout)
+	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
 	servemux := http.NewServeMux()
 	servemux.HandleFunc("/", logReq(UploadDialog))
@@ -28,7 +32,7 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseW
 		if len(ua) == 0 {
 			ua = []string{"-"}
 		}
-		fmt.Printf("%s %s %s %s\n", r.RemoteAddr, r.Method, r.URL.Path, ua[0])
+		log.Printf("HTTP Request: %s %s %s %s", r.RemoteAddr, r.Method, r.URL.Path, ua[0])
 		f(rw, r)
 	}
 }
@@ -37,10 +41,10 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseW
 func UploadDialog(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 
-	if upid, err := GenerateUploadID(); err != nil {
+	if upload_id, err := GenerateUploadID(); err != nil {
 		rw.Write(ErrorPage(err.Error()))
 	} else {
-		rw.Write(UploadPage(upid))
+		rw.Write(UploadPage(upload_id))
 	}
 }
 
@@ -78,8 +82,6 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 
 	r.Body = NewProgressReadCloser(r.Body, content_length, upload_id)
 
-	fmt.Printf("before creating MultipartReader\n")
-
 	mpr, err := r.MultipartReader() // TODO: check error
 	if err != nil {
 		rw.WriteHeader(http.StatusOK)
@@ -105,17 +107,16 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 				return
 			}
 			if err := SaveUploadFilename(upload_id, part.FileName()); err != nil {
-				fmt.Printf("couldn't save upload filename for %s\n", upload_id)
+				log.Printf("couldn't save upload filename for %s", upload_id)
 			}
 		}
 	}
 
 	if part_count > 1 {
-		fmt.Printf("found %d parts, saved only first one.", part_count)
+		log.Printf("found %d parts, saved only first one.", part_count)
 	}
 
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("postUpload: upload_id = " + upload_id))
 }
 
 func SaveDesc(rw http.ResponseWriter, r *http.Request) {
@@ -134,6 +135,7 @@ func SaveDesc(rw http.ResponseWriter, r *http.Request) {
 
 	text := r.Form.Get("input_desc")
 	if err := SaveUploadText(upload_id, text); err != nil {
+		log.Printf("saving description failed: %s", err.Error())
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage("saving description failed: " + err.Error()))
 	} else {
@@ -171,7 +173,7 @@ func Show(rw http.ResponseWriter, r *http.Request) {
 	filename, err := GetUploadFilename(upload_id)
 	if err != nil {
 		filename = ""
-		fmt.Printf("couldn't retrieve upload filename for %s\n", upload_id)
+		log.Printf("couldn't retrieve upload filename for %s", upload_id)
 	}
 
 	rw.Write(InformationPage(upload_id, desc, filename))
@@ -203,6 +205,9 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 	} else {
 		if filename, err := GetUploadFilename(upload_id); err == nil {
 			rw.Header()["Content-Disposition"] = []string{"attachment; filename=" + filename}
+		}
+		if size, err := GetUploadSize(upload_id); err == nil {
+			rw.Header()["Content-Length"] = []string{strconv.FormatInt(size,10)}
 		}
 		rw.Header()["Content-Type"] = []string{"application/octet-stream"}
 		rw.WriteHeader(http.StatusOK)

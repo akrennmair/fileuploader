@@ -71,3 +71,12 @@ func slurp(filename string) (string, error) {
 	f.Close()
 	return buf.String(), nil
 }
+
+func GetUploadSize(upload_id string) (size int64, err error) {
+	if fi, err := os.Stat("files/" + upload_id); err != nil {
+		return -1, err
+	} else {
+		size = fi.Size()
+	}
+	return
+}
