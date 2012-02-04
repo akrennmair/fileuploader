@@ -8,7 +8,7 @@ import (
 )
 
 func WriteUploadProgress(upload_id string, percent int) error {
-	if f, err := os.OpenFile("files/" + upload_id + ".prog.tmp", os.O_CREATE | os.O_WRONLY, 0644); err == nil {
+	if f, err := os.OpenFile("files/" + upload_id + ".prog.tmp", os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644); err == nil {
 		fmt.Fprintf(f, "%d", percent)
 		f.Close()
 		return os.Rename("files/" + upload_id + ".prog.tmp", "files/" + upload_id + ".prog")
@@ -18,7 +18,7 @@ func WriteUploadProgress(upload_id string, percent int) error {
 	return nil
 }
 
-func ReadUploadProgress(upload_id string) (percent int, err error) {
+func GetUploadProgress(upload_id string) (percent int, err error) {
 	if f, err := os.Open("files/" + upload_id + ".prog"); err == nil {
 		_, err = fmt.Fscanf(f, "%d", &percent)
 	}
@@ -30,14 +30,14 @@ func OpenUpload(upload_id string) (io.ReadCloser, error) {
 }
 
 func OpenUploadWritable(upload_id string) (io.WriteCloser, error) {
-	return os.OpenFile("files/" + upload_id, os.O_CREATE | os.O_WRONLY, 0644)
+	return os.OpenFile("files/" + upload_id, os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644)
 }
 
 func SaveUploadText(upload_id, text string) error {
-	if f, err := os.OpenFile("files/" + upload_id + ".desc", os.O_CREATE | os.O_WRONLY, 0644); err != nil {
+	if f, err := os.OpenFile("files/" + upload_id + ".desc", os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644); err != nil {
 		return err
 	} else {
-		f.Write([]byte(text))
+		f.WriteString(text)
 		f.Close()
 	}
 	return nil
@@ -48,7 +48,7 @@ func GetUploadText(upload_id string) (string, error) {
 }
 
 func SaveUploadFilename(upload_id, filename string) error {
-	if f, err := os.OpenFile("files/" + upload_id + ".fn", os.O_CREATE | os.O_WRONLY, 0644); err != nil {
+	if f, err := os.OpenFile("files/" + upload_id + ".fn", os.O_CREATE | os.O_WRONLY | os.O_EXCL, 0644); err != nil {
 		return err
 	} else {
 		f.WriteString(filename)

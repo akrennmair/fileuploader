@@ -14,7 +14,7 @@ func main() {
 	servemux.HandleFunc("/progress/", logReq(Progress))
 	servemux.HandleFunc("/upload/", logReq(PostUpload))
 	servemux.HandleFunc("/show/", logReq(Show))
-	servemux.HandleFunc("/savetext/", logReq(SaveText))
+	servemux.HandleFunc("/savedesc/", logReq(SaveDesc))
 	servemux.HandleFunc("/files/", logReq(DeliverFile))
 
 	httpsrv := &http.Server{Handler: servemux, Addr: "0.0.0.0:8000"}
@@ -52,7 +52,7 @@ func Progress(rw http.ResponseWriter, r *http.Request) {
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
-	percent, err := ReadUploadProgress(upload_id)
+	percent, err := GetUploadProgress(upload_id)
 	if err != nil {
 		percent = -1
 	}
@@ -118,7 +118,7 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("postUpload: upload_id = " + upload_id))
 }
 
-func SaveText(rw http.ResponseWriter, r *http.Request) {
+func SaveDesc(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		rw.WriteHeader(http.StatusMethodNotAllowed)
 		rw.Write(ErrorPage("POST expected"))
@@ -132,7 +132,7 @@ func SaveText(rw http.ResponseWriter, r *http.Request) {
 
 	r.ParseForm()
 
-	text := r.Form.Get("text")
+	text := r.Form.Get("input_desc")
 	if err := SaveUploadText(upload_id, text); err != nil {
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage("saving description failed: " + err.Error()))
@@ -151,11 +151,23 @@ func Show(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	percent, err := GetUploadProgress(upload_id)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+	if percent < 100 {
+		rw.WriteHeader(http.StatusForbidden)
+		rw.Write([]byte("Forbidden"))
+		return
+	}
+
 	desc, err := GetUploadText(upload_id)
 	if err != nil {
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
+
 	filename, err := GetUploadFilename(upload_id)
 	if err != nil {
 		filename = ""
@@ -171,6 +183,17 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		rw.WriteHeader(http.StatusNotFound)
 		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	percent, err := GetUploadProgress(upload_id)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+	if percent < 100 {
+		rw.WriteHeader(http.StatusForbidden)
+		rw.Write([]byte("Forbidden"))
 		return
 	}
 

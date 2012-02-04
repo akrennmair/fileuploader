@@ -91,17 +91,18 @@ function update_progress(percent) {
 function finish_progress() {
 	document.getElementById("progress").innerHTML = 'Upload finished. <a href="/files/{upload_id}">Uploaded to here.</a>';
 	if (save_pending) {
+		document.getElementById("input_desc").disabled = false;
 		document.forms["frm_save"].submit();
 	}
 }
 
 function save_desc() {
 	if (upload_started) {
-		document.getElementById("btn_save").disabled = true;
-		document.getElementById("input_desc").disabled = true;
 		if (percent == 100) {
 			document.forms["frm_save"].submit();
 		} else {
+			document.getElementById("btn_save").disabled = true;
+			document.getElementById("input_desc").disabled = true;
 			save_pending = true;
 			document.getElementById("div_savemsg").innerHTML = "Uploading file and saving description...";
 		}
@@ -113,12 +114,12 @@ function save_desc() {
 </head>
 <body>
 <h1>SuperUpload</h1>
-<form action="/upload/{upload_id}" method="post" id="frm_upload" target="uploadiframe" enctype="multipart/form-data">
+<form action="/upload/{upload_id}" method="post" id="frm_upload" name="frm_upload" target="uploadiframe" enctype="multipart/form-data">
 <input type="file" name="file" onchange="start_upload();">
 </form>
 <div id="progress">Please select file to upload</div>
-<form action="/savetext/{upload_id}" method="post" id="frm_save">
-<textarea rows="4" cols="80" id="input_desc"></textarea><br>
+<form action="/savedesc/{upload_id}" method="post" id="frm_save" name="frm_save">
+<textarea rows="4" cols="80" id="input_desc" name="input_desc"></textarea><br>
 <input type="submit" value="Save" onclick="save_desc(); return false;" id="btn_save">
 </form>
 <div id="div_savemsg"></div>
