@@ -14,6 +14,7 @@ func main() {
 	servemux.HandleFunc("/progress/", logReq(Progress))
 	servemux.HandleFunc("/upload/", logReq(PostUpload))
 	servemux.HandleFunc("/show/", logReq(Show))
+	servemux.HandleFunc("/savetext/", logReq(SaveText))
 	servemux.HandleFunc("/files/", logReq(DeliverFile))
 
 	httpsrv := &http.Server{Handler: servemux, Addr: "0.0.0.0:8000"}
@@ -106,11 +107,46 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 	rw.Write([]byte("postUpload: upload_id = " + upload_id))
 }
 
+func SaveText(rw http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		rw.WriteHeader(http.StatusMethodNotAllowed)
+		rw.Write(ErrorPage("POST expected"))
+		return
+	}
+	upload_id, err := GetUploadID(r.URL.Path)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	r.ParseForm()
+
+	text := r.Form.Get("text")
+	if err := SaveUploadText(upload_id, text); err != nil {
+		rw.WriteHeader(http.StatusOK)
+		rw.Write(ErrorPage("saving description failed: " + err.Error()))
+	} else {
+		rw.Header()["Location"] = []string{"/show/" + upload_id}
+		rw.WriteHeader(http.StatusFound)
+	}
+}
+
 // show link to file + description
 func Show(rw http.ResponseWriter, r *http.Request) {
-	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte("show: "))
-	rw.Write([]byte(r.URL.Path))
+	upload_id, err := GetUploadID(r.URL.Path)
+	if err != nil {
+		rw.WriteHeader(http.StatusNotFound)
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	desc, err := GetUploadText(upload_id)
+	if err != nil {
+		rw.Write(ErrorPage(err.Error()))
+		return
+	}
+
+	rw.Write(InformationPage(upload_id, desc))
 }
 
 // deliver file from file system by Upload ID
