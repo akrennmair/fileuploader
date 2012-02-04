@@ -14,7 +14,7 @@ func main() {
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
 	servemux := http.NewServeMux()
-	servemux.HandleFunc("/", logReq(UploadDialog))
+	servemux.Handle("/", &StartPageHandler{StartPage: logReq(UploadDialog), Other: http.FileServer(http.Dir("htdocs"))})
 	servemux.HandleFunc("/progress/", logReq(Progress))
 	servemux.HandleFunc("/upload/", logReq(PostUpload))
 	servemux.HandleFunc("/show/", logReq(Show))
@@ -25,14 +25,24 @@ func main() {
 	httpsrv.ListenAndServe()
 }
 
+type StartPageHandler struct {
+	StartPage	http.HandlerFunc
+	Other		http.Handler
+}
+
+func (h *StartPageHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if r.URL.Path == "/" {
+		h.StartPage(w, r)
+	} else {
+		LogHTTPRequest(r)
+		h.Other.ServeHTTP(w, r)
+	}
+}
+
 // generate wrapper functions for request logging
-func logReq(f http.HandlerFunc) http.HandlerFunc {
+func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(rw http.ResponseWriter, r *http.Request) {
 	return func(rw http.ResponseWriter, r *http.Request) {
-		ua := r.Header["User-Agent"]
-		if len(ua) == 0 {
-			ua = []string{"-"}
-		}
-		log.Printf("HTTP Request: %s %s %s %s", r.RemoteAddr, r.Method, r.URL.Path, ua[0])
+		LogHTTPRequest(r)
 		f(rw, r)
 	}
 }
@@ -219,4 +229,12 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 		io.Copy(rw, f)
 		f.Close()
 	}
+}
+
+func LogHTTPRequest(r *http.Request) {
+	ua := r.Header["User-Agent"]
+	if len(ua) == 0 {
+		ua = []string{"-"}
+	}
+	log.Printf("HTTP Request: %s %s %s %s", r.RemoteAddr, r.Method, r.URL.Path, ua[0])
 }
