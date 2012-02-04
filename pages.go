@@ -137,15 +137,16 @@ var information_tmpl = `<!DOCTYPE html>
 <meta charset="utf-8">
 </head>
 <body>
-<h1>Uploaded File</h1>
+<h1>Uploaded File {filename}</h1>
 <div>{description}</div>
-<div><a href="/files/{upload_id}">Download here</a></div>
+<div><a href="/files/{upload_id}">Download {filename}</a></div>
 </html>
 `
 
-func InformationPage(upload_id, description string) []byte {
+func InformationPage(upload_id, description, filename string) []byte {
 	tmpl := strings.Replace(information_tmpl, "{upload_id}", upload_id, -1)
 	tmpl = strings.Replace(tmpl, "{description}", escape_text(description), -1)
+	tmpl = strings.Replace(tmpl, "{filename}", escape_text(filename), -1)
 	return []byte(tmpl)
 }
 

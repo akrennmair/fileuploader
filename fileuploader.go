@@ -87,11 +87,15 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	part_count := 0
 	for {
-		fmt.Printf("handling next part\n")
 		if part, err := mpr.NextPart(); err == io.EOF {
 			break
 		} else {
+			part_count++
+			if part_count > 1 {
+				continue
+			}
 			if f, err := OpenUploadWritable(upload_id); err == nil {
 				io.Copy(f, part)
 				f.Close()
@@ -100,7 +104,14 @@ func PostUpload(rw http.ResponseWriter, r *http.Request) {
 				rw.Write([]byte("Opening file for " + upload_id + " failed"))
 				return
 			}
+			if err := SaveUploadFilename(upload_id, part.FileName()); err != nil {
+				fmt.Printf("couldn't save upload filename for %s\n", upload_id)
+			}
 		}
+	}
+
+	if part_count > 1 {
+		fmt.Printf("found %d parts, saved only first one.", part_count)
 	}
 
 	rw.WriteHeader(http.StatusOK)
@@ -145,8 +156,13 @@ func Show(rw http.ResponseWriter, r *http.Request) {
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
+	filename, err := GetUploadFilename(upload_id)
+	if err != nil {
+		filename = ""
+		fmt.Printf("couldn't retrieve upload filename for %s\n", upload_id)
+	}
 
-	rw.Write(InformationPage(upload_id, desc))
+	rw.Write(InformationPage(upload_id, desc, filename))
 }
 
 // deliver file from file system by Upload ID
@@ -162,6 +178,9 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusNotFound)
 		rw.Write(ErrorPage(err.Error()))
 	} else {
+		if filename, err := GetUploadFilename(upload_id); err == nil {
+			rw.Header()["Content-Disposition"] = []string{"attachment; filename=" + filename}
+		}
 		rw.Header()["Content-Type"] = []string{"application/octet-stream"}
 		rw.WriteHeader(http.StatusOK)
 		io.Copy(rw, f)

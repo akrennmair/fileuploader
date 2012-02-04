@@ -44,7 +44,25 @@ func SaveUploadText(upload_id, text string) error {
 }
 
 func GetUploadText(upload_id string) (string, error) {
-	f, err := os.Open("files/" + upload_id + ".desc")
+	return slurp("files/" + upload_id + ".desc")
+}
+
+func SaveUploadFilename(upload_id, filename string) error {
+	if f, err := os.OpenFile("files/" + upload_id + ".fn", os.O_CREATE | os.O_WRONLY, 0644); err != nil {
+		return err
+	} else {
+		f.WriteString(filename)
+		f.Close()
+	}
+	return nil
+}
+
+func GetUploadFilename(upload_id string) (string, error) {
+	return slurp("files/" + upload_id + ".fn")
+}
+
+func slurp(filename string) (string, error) {
+	f, err := os.Open(filename)
 	if err != nil {
 		return "", err
 	}
