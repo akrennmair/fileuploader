@@ -2,20 +2,19 @@ package main
 
 import (
 	"fmt"
-	"io"
 	"net/http"
 	"strconv"
-	"os"
+	"io"
 )
 
 func main() {
 
 	servemux := http.NewServeMux()
-	servemux.HandleFunc("/", logReq(uploadDialog))
-	servemux.HandleFunc("/progress/", logReq(progress))
-	servemux.HandleFunc("/upload/", logReq(postUpload))
-	servemux.HandleFunc("/show/", logReq(show))
-	servemux.HandleFunc("/files/", logReq(deliverFile))
+	servemux.HandleFunc("/", logReq(UploadDialog))
+	servemux.HandleFunc("/progress/", logReq(Progress))
+	servemux.HandleFunc("/upload/", logReq(PostUpload))
+	servemux.HandleFunc("/show/", logReq(Show))
+	servemux.HandleFunc("/files/", logReq(DeliverFile))
 
 	httpsrv := &http.Server{Handler: servemux, Addr: "0.0.0.0:8000"}
 	httpsrv.ListenAndServe()
@@ -34,7 +33,7 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(http.ResponseW
 }
 
 // renders the upload dialog
-func uploadDialog(rw http.ResponseWriter, r *http.Request) {
+func UploadDialog(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 
 	if upid, err := GenerateUploadID(); err != nil {
@@ -45,14 +44,14 @@ func uploadDialog(rw http.ResponseWriter, r *http.Request) {
 }
 
 // returns the progress for the current upload
-func progress(rw http.ResponseWriter, r *http.Request) {
+func Progress(rw http.ResponseWriter, r *http.Request) {
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
-	percent, err := ReadProgress(upload_id)
+	percent, err := ReadUploadProgress(upload_id)
 	if err != nil {
 		percent = -1
 	}
@@ -62,7 +61,7 @@ func progress(rw http.ResponseWriter, r *http.Request) {
 }
 
 // accepts the POST with the uploaded file
-func postUpload(rw http.ResponseWriter, r *http.Request) {
+func PostUpload(rw http.ResponseWriter, r *http.Request) {
 	if r.Method != "POST" {
 		rw.WriteHeader(http.StatusMethodNotAllowed)
 		rw.Write(ErrorPage("POST expected"))
@@ -92,7 +91,7 @@ func postUpload(rw http.ResponseWriter, r *http.Request) {
 		if part, err := mpr.NextPart(); err == io.EOF {
 			break
 		} else {
-			if f, err := os.OpenFile("files/" + upload_id, os.O_CREATE | os.O_WRONLY, 0444); err == nil {
+			if f, err := OpenUploadWritable(upload_id); err == nil {
 				io.Copy(f, part)
 				f.Close()
 			} else {
@@ -108,14 +107,14 @@ func postUpload(rw http.ResponseWriter, r *http.Request) {
 }
 
 // show link to file + description
-func show(rw http.ResponseWriter, r *http.Request) {
+func Show(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte("show: "))
 	rw.Write([]byte(r.URL.Path))
 }
 
 // deliver file from file system by Upload ID
-func deliverFile(rw http.ResponseWriter, r *http.Request) {
+func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
 		rw.WriteHeader(http.StatusNotFound)
@@ -123,10 +122,9 @@ func deliverFile(rw http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if f, err := os.Open("files/" + upload_id); err != nil {
+	if f, err := OpenUpload(upload_id); err != nil {
 		rw.WriteHeader(http.StatusNotFound)
 		rw.Write(ErrorPage(err.Error()))
-		return
 	} else {
 		rw.Header()["Content-Type"] = []string{"application/octet-stream"}
 		rw.WriteHeader(http.StatusOK)
