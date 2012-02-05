@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"time"
 )
 
 func main() {
@@ -25,6 +26,7 @@ func main() {
 	servemux.HandleFunc("/show/", logReq(Show))
 	servemux.HandleFunc("/savedesc/", logReq(SaveDesc))
 	servemux.HandleFunc("/files/", logReq(DeliverFile))
+	servemux.HandleFunc("/requpid", logReq(RequestUploadID))
 
 	// create HTTP server and run it on port 8000.
 	httpsrv := &http.Server{Handler: servemux, Addr: "0.0.0.0:8000"}
@@ -64,20 +66,17 @@ func logReq(f func(rw http.ResponseWriter, r *http.Request)) func(rw http.Respon
 // really nothing fancy.
 func UploadDialog(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
-
-	if upload_id, err := GenerateUploadID(); err != nil {
-		rw.Write(ErrorPage(err.Error()))
-	} else {
-		rw.Write(UploadPage(upload_id))
-	}
+	rw.Write(UploadPage())
 }
 
 // this functions returns the current upload progress for an upload ID
 func Progress(rw http.ResponseWriter, r *http.Request) {
 	// first, the upload ID is parsed and validated. Requests with invalid
 	// upload IDs are rejected.
+	log.Printf("Progress called")
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
+		log.Printf("Progress: UploadID doesn't validate: %s", err.Error())
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage(err.Error()))
 		return
@@ -86,11 +85,25 @@ func Progress(rw http.ResponseWriter, r *http.Request) {
 	// then the upload progress is fetched and sent to the client.
 	percent, err := GetUploadProgress(upload_id)
 	if err != nil {
+		log.Printf("Progress: there was an error fetching the upload progress: %s", err.Error())
 		percent = -1
 	}
+	percent_str := fmt.Sprintf("%d", percent)
 	rw.Header()["Content-Type"] = []string{"text/plain"}
+	rw.Header()["Content-Length"] = []string{fmt.Sprintf("%d", len(percent_str))}
+	MakeResponseNonCachable(&rw)
+	log.Printf("Progress: percent = %d %s", percent, percent_str)
+
 	rw.WriteHeader(http.StatusOK)
-	rw.Write([]byte(fmt.Sprintf("%d", percent)))
+	rw.Write([]byte(percent_str))
+	log.Printf("Progress: finished sending data")
+}
+
+func MakeResponseNonCachable(rw *http.ResponseWriter) {
+	(*rw).Header()["Expires"] = []string{"Sat, 1 Jan 2005 00:00:00 GMT"}
+	(*rw).Header()["Last-Modified"] = []string{time.Now().Format(time.RFC1123)}
+	(*rw).Header()["Cache-Control"] = []string{"no-cache, must-revalidate, no-store"}
+	(*rw).Header()["Pragma"] = []string{"no-cache"}
 }
 
 // this function receives the uploaded file, parses the multipart/form-data
@@ -288,6 +301,16 @@ func DeliverFile(rw http.ResponseWriter, r *http.Request) {
 		rw.WriteHeader(http.StatusOK)
 		io.Copy(rw, f)
 		f.Close()
+	}
+}
+
+func RequestUploadID(rw http.ResponseWriter, r *http.Request) {
+	if upload_id, err := GenerateUploadID(); err != nil {
+		rw.WriteHeader(http.StatusInternalServerError)
+		rw.Write([]byte(err.Error()))
+	} else {
+		rw.WriteHeader(http.StatusOK)
+		rw.Write([]byte(upload_id))
 	}
 }
 

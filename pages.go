@@ -51,21 +51,49 @@ function get(uri, f) {
 		xmlHttp.open('GET', uri, true);
 		xmlHttp.onreadystatechange = function() {
 			if (xmlHttp.readyState == 4) {
+				//console.log("responseText: " + xmlHttp.responseText);
 				f(xmlHttp.responseText);
 			}
 		};
 		xmlHttp.send(null);
 	} else {
-		console.log("error: failed to create xmlHttp object");
+		//console.log("error: failed to create xmlHttp object");
 	}
 }
 
+var upload_id = null;
 var upload_started = false;
 var percent = 0;
 var save_pending = false;
 
+function init() {
+	alert('init called');
+	upload_id = null;
+	upload_started = false;
+	percent = 0;
+	save_pending = false;
+}
+
+function set_upload_id(id) {
+	upload_id = id;
+	document.forms["frm_upload"].action = "/upload/" + upload_id;
+	document.forms["frm_save"].action = "/savedesc/" + upload_id;
+}
+
 function start_upload() {
+	//console.log("enterting start_upload()");
+	if (!upload_id) {
+		//console.log("no upload ID yet");
+		get('/requpid?nocache=' + Math.random(), function(id) {
+			//console.log("setting upload ID");
+			set_upload_id(id);
+			//console.log("restarting start_upload()");
+			window.setTimeout(start_upload, 1);
+		});
+		return;
+	}
 	if (!upload_started) {
+		//console.log("submitting upload");
 		document.forms["frm_upload"].submit();
 		start_progress();
 		upload_started = true;
@@ -75,13 +103,16 @@ function start_upload() {
 }
 
 function start_progress() {
-	get("/progress/{upload_id}", function(text) {
+	//console.log("starting progress");
+	get("/progress/" + upload_id + "?nocache=" + Math.random(), function(text) {
+		//console.log("got progress: " + text);
 		var new_percent = parseInt(text);
 		if (new_percent > percent) {
 			percent = new_percent;
 		}
 		update_progress(percent);
 		if (percent == 100) {
+			//console.log("finished with upload");
 			finish_progress();
 		} else {
 			window.setTimeout(start_progress, 1000);
@@ -94,7 +125,7 @@ function update_progress(percent) {
 }
 
 function finish_progress() {
-	document.getElementById("progress").innerHTML = 'Upload finished. <a href="/files/{upload_id}">Uploaded to here.</a>';
+	document.getElementById("progress").innerHTML = 'Upload finished. <a href="/files/' + upload_id + '">Uploaded to here.</a>';
 	if (save_pending) {
 		document.getElementById("input_desc").disabled = false;
 		document.forms["frm_save"].submit();
@@ -117,13 +148,13 @@ function save_desc() {
 }
 </script>
 </head>
-<body>
+<body onload="init();">
 <h1>SuperUpload</h1>
-<form action="/upload/{upload_id}" method="post" id="frm_upload" name="frm_upload" target="uploadiframe" enctype="multipart/form-data">
+<form action="/upload/INVALID" method="post" id="frm_upload" name="frm_upload" target="uploadiframe" enctype="multipart/form-data">
 <input type="file" name="file" onchange="start_upload();">
 </form>
 <div id="progress">Please select file to upload</div>
-<form action="/savedesc/{upload_id}" method="post" id="frm_save" name="frm_save">
+<form action="/savedesc/INVALID" method="post" id="frm_save" name="frm_save">
 <textarea rows="4" cols="80" id="input_desc" name="input_desc"></textarea><br>
 <input type="submit" value="Save" onclick="save_desc(); return false;" id="btn_save">
 </form>
@@ -135,8 +166,8 @@ function save_desc() {
 
 // this function renders the upload page. All of the JavaScript client logic is contained
 // in this template.
-func UploadPage(upload_id string) []byte {
-	return []byte(strings.Replace(upload_tmpl, "{upload_id}", upload_id, -1))
+func UploadPage() []byte {
+	return []byte(upload_tmpl)
 }
 
 var information_tmpl = `<!DOCTYPE html>

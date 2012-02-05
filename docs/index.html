@@ -182,8 +182,11 @@
 		</p>
 		<ul>
 			<li>
-				A user can upload a file, save the description text, and from the description page, he can then use the back button to return to the upload page.
-				A subsequent upload will fail though, as the previously used upload ID will be reused, which is then rejected by the server.
+			I tested the application with Chrome 16, Safari 5.1.1, Firefox 8.0.1 and Internet Explorer 8. One issue that I stumbled upon and that I couldn't
+			solve was the situation when a user would upload a file and save the description text, and then use the back button to get back to the upload page.
+			Chrome and Internet Explorer would fire a <tt>onload</tt> event when the user reaches the upload page, while Firefox and Safari wouldn't do so
+			and instead retain the exact state of the website when the user pressed the save button and was sent to the description page. So far, I didn't
+			find a workaround for this issue.
 			</li>
 		</ul>
 		<h2>Future Improvements</h2>
