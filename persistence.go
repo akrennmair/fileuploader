@@ -7,7 +7,6 @@ import (
 	"os"
 )
 
-
 // the functions in this file implement the "persistence layer" of the uploaded files and the
 // corresponding metadata, and implement all the details how this data is stored and retrieved.
 
