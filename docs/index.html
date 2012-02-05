@@ -41,8 +41,8 @@
 		</ul>
 		<h2>Distinguishing Uploads</h2>
 		<p>
-			The first problem I started working was how to distinguish different uploads. Since the file upload and saving the description text are two different steps, plus the 
-			upload progress polling needs the identify the file upload as well, an identifier needs to be introduced so that the backend knows which specific file upload each
+			The first problem I started working on was how to distinguish different uploads. Since the file upload and saving the description text are two different steps, plus the 
+			upload progress polling needs to identify the file upload too, an identifier needs to be introduced so that the backend knows which specific file upload each
 			request is about.
 		</p>
 		<p>
@@ -62,13 +62,16 @@
 		</p>
 		<p>
 			In the application, the upload ID is used practically with every request to identify to which upload it belongs. Except for the upload page, HTTP requests without
-			upload ID or with an invalid upload ID are ignored.
+			upload ID or with an invalid upload ID are ignored. Before an upload is started, the client fetches a new upload ID from the server, and subsequently uses it to
+			identify the upload.
 		</p>
 		<h2>The Upload Process</h2>
 		<h3>Client Side</h3>
 		<p>
 			When the user opens the upload page, a file input control, a text area and a save button is shown. When the user selects a file to be uploaded, the <tt>onchange</tt>
-			event of the file input control starts a JavaScript function <tt>start_upload()</tt>, which submits the file upload form to <tt>/upload/&lt;upload_id&gt;</tt>, marks that an upload has been started
+			event of the file input control starts a JavaScript function <tt>start_upload()</tt>, which first checks whether it already has an upload ID from the server. If it
+			doesn't, it fetches one from the server and restarts <tt>start_upload()</tt>, otherwise it submits the file upload form 
+			to <tt>/upload/&lt;upload_id&gt;</tt>, and then marks that an upload has been started
 			and starts polling for the upload progress. In case an upload has already been started before on the same page, a warning message is presented to the user
 			and no upload is started. The file upload form is targeted to a hidden iframe. This has the effect that the file upload can work without having to reload
 			the upload page.
@@ -101,10 +104,11 @@
 		</p>
 		<h3>Server Side</h3>
 		<p>
-			When user opens the upload page, the server generates an upload ID, fills it into the right placeholders of the HTML template, and sends it to the client.
+			When user opens the upload page, the server renders the upload page.
 		</p>
 		<p>
-			Next, when the user selects a file to upload, the server receives the file as a multipart/form-data encoded POST request. The server first checks whether
+		Next, when the user selects a file to upload, the server receives a request for an upload ID. It generates an upload ID and sends it back to the client.
+			The it receives the the selected file as a multipart/form-data encoded POST request. The server first checks whether
 			it really received a POST request. Then it checks whether the provided upload ID is valid. Requests with an invalid HTTP method or an invalid upload ID
 			are rejected.
 		</p>
@@ -116,7 +120,7 @@
 		</p>
 		<p>
 			After setting up the progress counting, the actual multipart-form-data is being parsed using Go's http.MultipartReader that is part of its standard library.
-			Only the first part is saved, all subsequent parts are ignored. In addition to the first file, the original filename is saved as well. When the upload 
+			Only the first part is saved, all subsequent parts are ignored. In addition to the first file, the original filename is saved as well (if available). When the upload 
 			is finished, the server responds with an HTTP status 200.
 		</p>
 		<p>
@@ -133,13 +137,13 @@
 			This description page first validates the upload ID, and then fetches the corresponding description text and original filename, and displays them alongside with the download link.
 			If an upload hasn't completed yet, the server sends an HTTP 403 instead, and displays "forbidden" to the user. Displaying the description text requires
 			another security consideration: both the description text and the original filename are untrusted user input and thus must be escaped accordingly,
-			otherwise the application would be vulnerable to cross-site scripting (XSS), as users would have free control about the page's content.
+			otherwise the application would be vulnerable to cross-site scripting (XSS), as users would have free control over the page's content.
 		</p>
 		<p>
 			After visiting the description page, a user may click the download link. The server again validates the specified upload ID (and rejects invalid requests)
 			and checks whether the requested file has been uploaded completely. Access to incomplete uploads will be denied with an HTTP 403 and a message "forbidden".
 			The server then sets the Content-Disposition header (so that the user will download the file under the same filename it has been uploaded) and the
-			Content-Length header to the size of the file, and then sends to file contents to the client.
+			Content-Length header to the size of the file, and then sends the file contents to the client.
 		</p>
 		<h3>Storage</h3>
 		<p>
@@ -176,25 +180,16 @@
 			to access to other parts of the infrastructure. Each instance only requires the knowledge of the secret key to indepedently verify the
 			authenticity of an upload ID. No central authority whatsoever is required for these operations.
 		</p>
-		<h2>Known Issues</h2>
-		<p>
-			I am aware of the following issues in the application:
-		</p>
+		<h2>Issues and Future Improvements</h2>
 		<ul>
-			<li>
-			I tested the application with Chrome 16, Safari 5.1.1, Firefox 8.0.1 and Internet Explorer 8. One issue that I stumbled upon and that I couldn't
-			solve was the situation when a user would upload a file and save the description text, and then use the back button to get back to the upload page.
-			Chrome and Internet Explorer would fire a <tt>onload</tt> event when the user reaches the upload page, while Firefox and Safari wouldn't do so
-			and instead retain the exact state of the website when the user pressed the save button and was sent to the description page. So far, I didn't
-			find a workaround for this issue.
-			</li>
-		</ul>
-		<h2>Future Improvements</h2>
-		<ul>
-			<li>Barely any automated tests exist for the application. There is a lot of room for improvement on that part.</li>
-			<li>The URL routing code is a bit awkward and should be refactored.</li>
+			<li>More work on details in error handling is necessary. For example, the case that a user presses the browser's cancel button is currently unhandled both in
+			the UI code and the server-side code.</li>
 			<li>The current JavaScript code is messy, uses global variables and violates the principle of separation of code (JavaScript) and 
 			presentation (HTML), mostly because I totally lack the experience in using JavaScript. This is an area where a lot of refactoring might be necessary.</li>
+			<li>Barely any automated tests exist for the application. There is a lot of room for improvement on that part.</li>
+			<li>The URL routing code is a bit awkward and should be refactored.</li>
+			<li>Cross-browser testing was limited. I ran tests with Chrome 16, Firefox 8.0.1, Safari 5.1.1 (all on Mac OS X 10.6) and Internet Explorer 8 (on Windows XP SP3),
+			but I didn't have the resources to test with other, older browsers.</li>
 		</ul>
 	</body>
 </html>
