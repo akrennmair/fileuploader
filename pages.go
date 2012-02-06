@@ -49,8 +49,7 @@ var upload_tmpl = `<!DOCTYPE html>
 </html>
 `
 
-// this function renders the upload page. All of the JavaScript client logic is contained
-// in this template.
+// this function renders the upload page.
 func UploadPage() []byte {
 	return []byte(upload_tmpl)
 }
