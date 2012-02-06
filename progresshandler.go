@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"fmt"
+	"time"
 )
 
 type ProgressHandler struct { 
@@ -36,3 +37,11 @@ func (h *ProgressHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte(percent_str))
 }
+
+func MakeResponseNonCachable(rw *http.ResponseWriter) {
+	(*rw).Header()["Expires"] = []string{"Sat, 1 Jan 2005 00:00:00 GMT"}
+	(*rw).Header()["Last-Modified"] = []string{time.Now().Format(time.RFC1123)}
+	(*rw).Header()["Cache-Control"] = []string{"no-cache, must-revalidate, no-store"}
+	(*rw).Header()["Pragma"] = []string{"no-cache"}
+}
+

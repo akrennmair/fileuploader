@@ -4,7 +4,6 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"time"
 )
 
 func main() {
@@ -45,13 +44,6 @@ func NewLoggingHandler(h http.Handler) http.Handler {
 func (h *LoggingHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	LogHTTPRequest(r)
 	h.handler.ServeHTTP(w, r)
-}
-
-func MakeResponseNonCachable(rw *http.ResponseWriter) {
-	(*rw).Header()["Expires"] = []string{"Sat, 1 Jan 2005 00:00:00 GMT"}
-	(*rw).Header()["Last-Modified"] = []string{time.Now().Format(time.RFC1123)}
-	(*rw).Header()["Cache-Control"] = []string{"no-cache, must-revalidate, no-store"}
-	(*rw).Header()["Pragma"] = []string{"no-cache"}
 }
 
 // helper function to log an HTTP request.
