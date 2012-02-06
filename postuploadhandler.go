@@ -7,7 +7,9 @@ import (
 	"strconv"
 )
 
-type PostUploadHandler struct { }
+type PostUploadHandler struct { 
+	Persistence PersistenceManager
+}
 
 // this handler receives the uploaded file, parses the multipart/form-data
 // and stores the file.
@@ -33,7 +35,7 @@ func (h *PostUploadHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// we then wrap the r.Body io.ReadClose with our own custom ProgressReadCloser
 	// that will count how much data was received and will continuously update
 	// the upload progress.
-	r.Body = NewProgressReadCloser(r.Body, content_length, upload_id)
+	r.Body = NewProgressReadCloser(h.Persistence, r.Body, content_length, upload_id)
 
 	// and then we start parsing the multipart/form-data request body.
 	mpr, err := r.MultipartReader()
@@ -53,7 +55,7 @@ func (h *PostUploadHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 			if part_count > 1 {
 				continue
 			}
-			if f, err := OpenUploadWritable(upload_id); err == nil {
+			if f, err := h.Persistence.OpenUploadWritable(upload_id); err == nil {
 				io.Copy(f, part)
 				f.Close()
 			} else {
@@ -62,7 +64,7 @@ func (h *PostUploadHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 				return
 			}
 			// when upload is finished, we also store the original filename.
-			if err := SaveUploadFilename(upload_id, part.FileName()); err != nil {
+			if err := h.Persistence.SaveUploadFilename(upload_id, part.FileName()); err != nil {
 				log.Printf("couldn't save upload filename for %s", upload_id)
 			}
 		}

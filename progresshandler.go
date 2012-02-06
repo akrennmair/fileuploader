@@ -6,7 +6,9 @@ import (
 	"fmt"
 )
 
-type ProgressHandler struct { }
+type ProgressHandler struct { 
+	Persistence PersistenceManager
+}
 
 // this handler returns the current upload progress for an upload ID
 func (h *ProgressHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -22,7 +24,7 @@ func (h *ProgressHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// then the upload progress is fetched and sent to the client.
-	percent, err := GetUploadProgress(upload_id)
+	percent, err := h.Persistence.GetUploadProgress(upload_id)
 	if err != nil {
 		log.Printf("Progress: there was an error fetching the upload progress: %s", err.Error())
 		percent = -1

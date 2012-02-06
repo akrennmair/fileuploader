@@ -5,7 +5,9 @@ import (
 	"net/http"
 )
 
-type SaveDescHandler struct { }
+type SaveDescHandler struct { 
+	Persistence PersistenceManager
+}
 
 // this handler saves the description text.
 func(h *SaveDescHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
@@ -28,7 +30,7 @@ func(h *SaveDescHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// uploaded yet as this is bogus and somebody might be emulating
 	// the actual client's requests to the server without following
 	// the proper logic.
-	if !UploadExists(upload_id) {
+	if !h.Persistence.UploadExists(upload_id) {
 		rw.WriteHeader(http.StatusForbidden)
 		rw.Write([]byte("Forbidden"))
 		return
@@ -40,7 +42,7 @@ func(h *SaveDescHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// saved the description text, and if that went fine, redirect
 	// to the description page.
-	if err := SaveUploadText(upload_id, text); err != nil {
+	if err := h.Persistence.SaveUploadText(upload_id, text); err != nil {
 		log.Printf("saving description failed: %s", err.Error())
 		rw.WriteHeader(http.StatusOK)
 		rw.Write(ErrorPage("saving description failed: " + err.Error()))

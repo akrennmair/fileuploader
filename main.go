@@ -12,17 +12,19 @@ func main() {
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
 
+	pm := NewFilePersistenceManager()
+
 	// setup URI multiplexing
 	servemux := http.NewServeMux()
 
 	// the / prefix is special... it handles all the request that didn't match the other prefixes
 	// that's why we create the custom StartPageHandler.
 	servemux.Handle("/", &StartPageHandler{Other: http.FileServer(http.Dir("htdocs"))})
-	servemux.Handle("/progress/", &ProgressHandler{})
-	servemux.Handle("/upload/", &PostUploadHandler{})
-	servemux.Handle("/show/", &ShowHandler{})
-	servemux.Handle("/savedesc/", &SaveDescHandler{})
-	servemux.Handle("/files/", &DeliverFileHandler{})
+	servemux.Handle("/progress/", &ProgressHandler{Persistence: pm})
+	servemux.Handle("/upload/", &PostUploadHandler{Persistence: pm})
+	servemux.Handle("/show/", &ShowHandler{Persistence: pm})
+	servemux.Handle("/savedesc/", &SaveDescHandler{Persistence: pm})
+	servemux.Handle("/files/", &DeliverFileHandler{Persistence: pm})
 	servemux.Handle("/requpid", &RequestIDHandler{})
 
 	// create HTTP server and run it on port 8000.

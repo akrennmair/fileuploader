@@ -5,7 +5,9 @@ import (
 	"net/http"
 )
 
-type ShowHandler struct { }
+type ShowHandler struct  {
+	Persistence PersistenceManager
+}
 
 // this handler renders the description page, which contains
 // a link to the uploaded file plus the description text that
@@ -20,7 +22,7 @@ func (h *ShowHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	}
 
 	// reject requests if the upload isn't complete yet
-	percent, err := GetUploadProgress(upload_id)
+	percent, err := h.Persistence.GetUploadProgress(upload_id)
 	if err != nil {
 		rw.Write(ErrorPage(err.Error()))
 		return
@@ -33,13 +35,13 @@ func (h *ShowHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 
 	// fetch description text and original filename and
 	// render the description page.
-	desc, err := GetUploadText(upload_id)
+	desc, err := h.Persistence.GetUploadText(upload_id)
 	if err != nil {
 		rw.Write(ErrorPage(err.Error()))
 		return
 	}
 
-	filename, err := GetUploadFilename(upload_id)
+	filename, err := h.Persistence.GetUploadFilename(upload_id)
 	if err != nil {
 		filename = ""
 		log.Printf("couldn't retrieve upload filename for %s", upload_id)

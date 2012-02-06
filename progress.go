@@ -11,10 +11,11 @@ type ProgressReadCloser struct {
 	received       uint64
 	upload_id      string
 	prev_percent   int
+	p              PersistenceManager
 }
 
-func NewProgressReadCloser(r io.ReadCloser, content_length uint64, upload_id string) io.ReadCloser {
-	return &ProgressReadCloser{r: r, content_length: content_length, upload_id: upload_id, prev_percent: -1}
+func NewProgressReadCloser(p PersistenceManager, r io.ReadCloser, content_length uint64, upload_id string) io.ReadCloser {
+	return &ProgressReadCloser{r: r, content_length: content_length, upload_id: upload_id, prev_percent: -1, p: p}
 }
 
 func (prc *ProgressReadCloser) Read(p []byte) (n int, err error) {
@@ -30,7 +31,7 @@ func (prc *ProgressReadCloser) Read(p []byte) (n int, err error) {
 		prc.received += uint64(n)
 		percent := int((100 * prc.received) / prc.content_length)
 		if prc.prev_percent < 0 || percent > prc.prev_percent {
-			if err = WriteUploadProgress(prc.upload_id, percent); err != nil {
+			if err = prc.p.WriteUploadProgress(prc.upload_id, percent); err != nil {
 				log.Printf("error writing progress: %s", err.Error())
 			}
 		}
