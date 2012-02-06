@@ -14,7 +14,6 @@ type ProgressHandler struct {
 func (h *ProgressHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	// first, the upload ID is parsed and validated. Requests with invalid
 	// upload IDs are rejected.
-	log.Printf("Progress called")
 	upload_id, err := GetUploadID(r.URL.Path)
 	if err != nil {
 		log.Printf("Progress: UploadID doesn't validate: %s", err.Error())
@@ -33,9 +32,7 @@ func (h *ProgressHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	rw.Header()["Content-Type"] = []string{"text/plain"}
 	rw.Header()["Content-Length"] = []string{fmt.Sprintf("%d", len(percent_str))}
 	MakeResponseNonCachable(&rw)
-	log.Printf("Progress: percent = %d %s", percent, percent_str)
 
 	rw.WriteHeader(http.StatusOK)
 	rw.Write([]byte(percent_str))
-	log.Printf("Progress: finished sending data")
 }
