@@ -26,7 +26,7 @@ func TestSaveDescHandler(t *testing.T) {
 
 	sdh.ServeHTTP(resp, req)
 
-	if (resp.StatusCode != http.StatusFound) {
+	if resp.StatusCode != http.StatusFound {
 		t.Errorf("SaveDescHandler didn't answer with 302 (%d instead)", resp.StatusCode)
 	}
 	if len(resp.Header()["Location"]) < 1 || resp.Header()["Location"][0] != "/show/" + upload_id {

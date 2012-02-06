@@ -60,6 +60,10 @@ func (f *BufferReaderCloser) Len() int {
 	return f.b.Len()
 }
 
+func (f *BufferReaderCloser) String() string {
+	return f.b.String()
+}
+
 type MockPersistenceManager struct {
 	Progress    int
 	FileContent *BufferReaderCloser
@@ -69,7 +73,7 @@ type MockPersistenceManager struct {
 }
 
 func NewMockPersistenceManager() *MockPersistenceManager {
-	return &MockPersistenceManager{FileContent: &BufferReaderCloser{}}
+	return &MockPersistenceManager{FileContent: NewBufferReaderCloser("")}
 }
 
 func (h *MockPersistenceManager) WriteUploadProgress(upload_id string, percent int) error {
