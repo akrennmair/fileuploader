@@ -67,8 +67,9 @@
 		</p>
 		<h2>The Upload Process</h2>
 		<h3>Client Side</h3>
+		<p><small>(please note that mentioned JavaScript functions in the following section are noted in their short form. In the actual code, they are placed under the ak.upload namespace)</small></p>
 		<p>
-			When the user opens the upload page, a file input control, a text area and a save button is shown. When the user selects a file to be uploaded, the <tt>onchange</tt>
+			When the user opens the upload page, a file input control, a text area and a save button are shown. When the user selects a file to be uploaded, the <tt>onchange</tt>
 			event of the file input control starts a JavaScript function <tt>start_upload()</tt>, which first checks whether it already has an upload ID from the server. If it
 			doesn't, it fetches one from the server and restarts <tt>start_upload()</tt>, otherwise it submits the file upload form 
 			to <tt>/upload/&lt;upload_id&gt;</tt>, and then marks that an upload has been started
@@ -108,18 +109,18 @@
 		</p>
 		<p>
 		Next, when the user selects a file to upload, the server receives a request for an upload ID. It generates an upload ID and sends it back to the client.
-			The it receives the the selected file as a multipart/form-data encoded POST request. The server first checks whether
+			Then it receives the selected file as a multipart/form-data encoded POST request. The server first checks whether
 			it really received a POST request. Then it checks whether the provided upload ID is valid. Requests with an invalid HTTP method or an invalid upload ID
 			are rejected.
 		</p>
 		<p>
 			Then the server sets up the progress counting. This is done the following way: the multipart/form-data encoded data is parsed from the HTTP request body. In 
 			order to track the progress, the <tt>io.ReaderCloser</tt> object connected with the HTTP request body is wrapped with an own implementation of the
-			<tt>io.ReaderCloser</tt> interface to which the expected Content-Length is passed and which then subsequently tracks how much data has already been
+			<tt>io.ReaderCloser</tt> interface to which the expected Content-Length and the upload ID are passed and which then subsequently tracks how much data has already been
 			read from the HTTP request body (i.e. uploaded) and regularly updates the current upload progress.
 		</p>
 		<p>
-			After setting up the progress counting, the actual multipart-form-data is being parsed using Go's http.MultipartReader that is part of its standard library.
+			After setting up the progress counting, the actual multipart/form-data is being parsed using Go's http.MultipartReader that is part of its standard library.
 			Only the first part is saved, all subsequent parts are ignored. In addition to the first file, the original filename is saved as well (if available). When the upload 
 			is finished, the server responds with an HTTP status 200.
 		</p>
@@ -177,7 +178,7 @@
 		</p>
 		<p>
 			Another small factor that helps scalability is the way the upload ID is created and validated: both operations can be performed with no need
-			to access to other parts of the infrastructure. Each instance only requires the knowledge of the secret key to indepedently verify the
+			to access to other parts of the infrastructure. Each instance only requires the knowledge of the secret key to independently verify the
 			authenticity of an upload ID. No central authority whatsoever is required for these operations.
 		</p>
 		<h2>Issues and Future Improvements</h2>
