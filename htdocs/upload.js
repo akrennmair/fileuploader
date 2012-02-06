@@ -31,7 +31,7 @@ ak.upload = {
 	start_upload: function() {
 		// if we have no upload ID yet, we fetch one and rerun start_upload().
 		if (!ak.upload.upload_id) {
-			// the nocache?=random is there to randomize the URL. was added
+			// the ?nocache=random is there to randomize the URL. was added
 			// to remedy browser caching that even wouldn't go away when the usual
 			// HTTP response headers to prevent caching were set.
 			get('/requpid?nocache=' + Math.random(), function(id) {
