@@ -1,0 +1,31 @@
+README for fileuploader
+=======================
+
+In order to build fileuploader, you need the latest Go weekly snapshot (at the 
+time of writing, weekly.2012-01-27) and the build tool gb, which you can
+install in your Go system with the following command:
+
+	goinstall code.google.com/p/go-gb/gb
+
+In order to build fileuploader, simply run
+
+	gb
+
+on your command line and gb will automatically create a binary named 
+fileuploader.
+
+fileuploader comes with automated tests. You can run them the following way:
+
+	gb -t
+
+If everything works fine, you should see "PASS" on your terminal.
+
+To run fileuploader, simply type
+
+	./fileuploader
+
+and fileuploader will run and bind to port 8000. Open http://localhost:8000/
+to see the application user interface. Uploaded files will be stored in
+the files subdirectory.
+
+For further details and documentation, please read docs/index.html
