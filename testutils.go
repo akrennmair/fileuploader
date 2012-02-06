@@ -64,6 +64,7 @@ type MockPersistenceManager struct {
 	Progress    int
 	FileContent *BufferReaderCloser
 	Exists      bool
+	description string
 }
 
 func NewMockPersistenceManager() *MockPersistenceManager {
@@ -92,11 +93,12 @@ func (h *MockPersistenceManager) UploadExists(upload_id string) bool {
 }
 
 func (h *MockPersistenceManager) SaveUploadText(upload_id, text string) error {
+	h.description = text
 	return nil
 }
 
 func (h *MockPersistenceManager) GetUploadText(upload_id string) (string, error) { 
-	return "", nil
+	return h.description, nil
 }
 
 func (h *MockPersistenceManager) SaveUploadFilename(upload_id, filename string) error { 
