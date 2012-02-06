@@ -4,9 +4,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"runtime"
 )
 
 func main() {
+	// set number of CPUs that can be executing simultaneously
+	runtime.GOMAXPROCS(4)
+
 	// setup logging to stdout; show exact time in log, including lines in sourcecode
 	log.SetOutput(os.Stdout)
 	log.SetFlags(log.Ldate | log.Ltime | log.Lmicroseconds | log.Lshortfile)
