@@ -7,7 +7,7 @@
 	<body>
 		<h1>Documentation for fileuploader by Andreas Krennmair</h1>
 		<p>
-			This documentation provides information about the overall architecture and design decisions of my solution for the SoundCloud Backend Developer Challenge.
+			This documentation provides information regarding the overall architecture and design decisions about my solution for the SoundCloud Backend Developer Challenge.
 		</p>
 		<p>
 			My solution, dubbed fileuploader, is developed in the programming language <a href="http://golang.org/">Go</a> developed at Google. Since the language is still in flux,
@@ -46,7 +46,7 @@
 			request is about.
 		</p>
 		<p>
-			In order to solve this, a reasonably unique upload ID is generated when the upload page is opened. This is one point where security needs to be taken into
+			In order to solve this, a reasonably unique upload ID is generated right before an upload is started. This is one point where security needs to be taken into
 			account: since this is data sent from the client, it is untrusted. An attacker could tamper with the upload ID: he could use an existing one, try to guess upload IDs or even try to conceive his own IDs
 			for all kinds of scenarios, such as attempts to overwrite existing uploaded files or to enforce enumerable IDs.
 			To protect against such scenarios, the server needs to dictate the upload IDs that can be used by a client, including a mechanism to find out whether an upload ID is legitimate, i.e. that it was
@@ -67,7 +67,7 @@
 		</p>
 		<h2>The Upload Process</h2>
 		<h3>Client Side</h3>
-		<p><small>(please note that mentioned JavaScript functions in the following section are noted in their short form. In the actual code, they are placed under the ak.upload namespace)</small></p>
+		<p><small>(please note that mentioned JavaScript functions in the following section are noted in their short form. In the actual code, they are placed under the <tt>ak.upload</tt> namespace)</small></p>
 		<p>
 			When the user opens the upload page, a file input control, a text area and a save button are shown. When the user selects a file to be uploaded, the <tt>onchange</tt>
 			event of the file input control starts a JavaScript function <tt>start_upload()</tt>, which first checks whether it already has an upload ID from the server. If it
@@ -137,7 +137,7 @@
 		<p>
 			This description page first validates the upload ID, and then fetches the corresponding description text and original filename, and displays them alongside with the download link.
 			If an upload hasn't completed yet, the server sends an HTTP 403 instead, and displays "forbidden" to the user. Displaying the description text requires
-			another security consideration: both the description text and the original filename are untrusted user input and thus must be escaped accordingly,
+			another security consideration: both the description text and the original filename are un-trusted user input and thus must be escaped accordingly,
 			otherwise the application would be vulnerable to cross-site scripting (XSS), as users would have free control over the page's content.
 		</p>
 		<p>
@@ -149,7 +149,7 @@
 		<h3>Storage</h3>
 		<p>
 			In my implementation, I chose to store both the uploaded files and the corresponding metadata (description text, upload progress, original filename) in a 
-			key-value store, namely the one which practically every operating system comes with: the filesystem.
+			key-value store, namely the one which practically every operating system comes with, i.e. the filesystem.
 			Not only allows this a simple implementation (each operation on an entry, such as adding a new key-value pair, deleting an existing key, or updating
 			the value of an existing key, maps to a few simple file operations), it also keeps practically all state about each upload out of the server.
 		</p>
