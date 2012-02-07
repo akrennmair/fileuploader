@@ -24,7 +24,7 @@ func TestProgressHandler(t *testing.T) {
 	ph.ServeHTTP(resp, req)
 
 	if resp.Buffer.String() != "23" {
-		t.Errorf("for progress 23, ProgressHandler didn't deliver string '10'")
+		t.Errorf("for progress 23, ProgressHandler didn't deliver string '23'")
 	}
 	if resp.Header()["Content-Length"][0] != "2" {
 		t.Errorf("for progress 23, ProgressHandler didn't set the correct Content-Length")
