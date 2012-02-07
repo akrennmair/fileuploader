@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"fmt"
 )
 
 type StartPageHandler struct {
@@ -14,8 +15,10 @@ type StartPageHandler struct {
 
 func (h *StartPageHandler) ServeHTTP(rw http.ResponseWriter, r *http.Request) {
 	if r.URL.Path == "/" {
+		page := UploadPage()
+		rw.Header()["Content-Length"] = []string{fmt.Sprintf("%d", len(page))}
 		rw.WriteHeader(http.StatusOK)
-		rw.Write(UploadPage())
+		rw.Write(page)
 	} else {
 		h.Other.ServeHTTP(rw, r)
 	}
